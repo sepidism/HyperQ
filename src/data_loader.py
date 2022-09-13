@@ -37,10 +37,11 @@ def get_EdgeEmb(filename,size):
     nodeEmb = []
     for line in f:
         w = line.split()
-        nn = int(w[0])
-        p = int(w[1])
+        #nn = int(w[0])
+        
+        p = int(w[0])
         tmp = [0. for i in range(size)]
-        tmp[p] = 1
+        tmp[p-1] = 1
         #node_emb[i].extend(tmp)
         nodeEmb.append(tmp)
         i+=1
@@ -86,7 +87,7 @@ def read_hypergraph(filename):
    for line in file:
        ids = line.strip().split()
        hyperedge = []
-       if len(ids) < 1:
+       if len(ids) < 2:
            continue
        for j in range(len(ids)-1):
            id = ids[j]
@@ -166,7 +167,8 @@ def load_data(model_args):
     hedge,types = build_hypergraph(train_data_n,train_data_h)
     #node_emb = get_nodeEmb(directory +'bipart.txt')
     #edge_emb = get_EdgeEmb(directory +'nodeparts.txt',node_emb,len(hyperedgelabel)+1)
-    edge_emb = get_EdgeEmb(directory +'nodeparts.txt',len(hyperedgelabel)+1)
+    #edge_emb = get_EdgeEmb(directory +'nodeparts.txt',len(hyperedgelabel)+1)
+    edge_emb = get_EdgeEmb(directory +'nodeparts.txt',20)
     print(edge_emb[0])
 
 
@@ -180,6 +182,7 @@ def load_data(model_args):
         print("train node does not include all nodes")
        # return 0
 
+    return triplets, len(hyperedgelabel), neighbor_params
     return triplets, len(hyperedgelabel)+1, neighbor_params
 
 

@@ -20,10 +20,10 @@ class Aggregator(nn.Module):
         # masks: [batch_size, -1, 2, n_neighbor, 1]
         
         hyperedge_vectors = torch.mean(neighbor_vectors * masks, dim=-2)  # [batch_size, -1, 2, input_dim]
-        hyperedge_vectors = torch.squeeze(hyperedge_vectors,1)
-        hyperedge_v = torch.cat([hyperedge_vectors, node_emb],dim=2)
-        hyperedge_v = torch.unsqueeze(hyperedge_v,1)
-        outputs = self._call(self_vectors, hyperedge_v,node_emb)
+        #hyperedge_vectors = torch.squeeze(hyperedge_vectors,1)
+        #hyperedge_v = torch.cat([hyperedge_vectors, node_emb],dim=2)
+        #hyperedge_v = torch.unsqueeze(hyperedge_v,1)
+        outputs = self._call(self_vectors, hyperedge_vectors,node_emb)
         return outputs
 
     @abstractmethod
@@ -36,23 +36,37 @@ class Aggregator(nn.Module):
 class MeanAggregator(Aggregator):
     def __init__(self, batch_size, input_dim, output_dim, act=lambda x: x, self_included=True):
         super(MeanAggregator, self).__init__(batch_size, input_dim, output_dim, act, self_included)
-        self.layer1 = nn.Linear((self.input_dim+self.input_dim), (self.input_dim+self.input_dim))
+        self.layer1 = nn.Linear((self.input_dim*self.input_dim)+20, (self.output_dim))
         #self.layer1 = nn.Linear((self.input_dim+self.input_dim+14), 64)
-        self.layer2 = nn.Linear((self.input_dim+self.input_dim), self.output_dim)
+        #self.layer2 = nn.Linear( (self.input_dim+16), self.output_dim)
         nn.init.xavier_uniform_(self.layer1.weight)
-        nn.init.xavier_uniform_(self.layer2.weight)
+        #nn.init.xavier_uniform_(self.layer2.weight)
 
     def _call(self, self_vectors, hyperedge_vectors,node_emb):
-        self.act2 = F.relu
-        maxout = torch.amax(hyperedge_vectors,dim=-2)
-        minout = torch.amin(hyperedge_vectors,dim=-2)
-        output = torch.sub(maxout,minout)
-        output1 = self.layer1(output)  # [-1, output_dim]
-        output2 = self.layer2(output1)
+        #self.act2 = F.relu
+        output = torch.mean(hyperedge_vectors, dim=-2)
+        node_emb = torch.mean(node_emb,dim=-2)
+        #maxout = torch.amax(hyperedge_vectors,dim=-2)
+        #minout = torch.amin(hyperedge_vectors,dim=-2)
+        #output = torch.sub(maxout,minout)
+        if self.self_included:
+            output += self_vectors
+        x = torch.permute(output,(0,2,1))
+        #print(x.shape,output.shape,self.layer.weight.shape)
+        output = torch.bmm(x,output)
+        #print(output.shape)
+        output = output.view([-1, self.input_dim*self.input_dim])  # [-1, input_dim]
+        #output = torch.squeeze(output,1)
+        output = torch.cat([output,node_emb],dim=-1)
+        output = self.layer1(output)  # [-1, output_dim]
+        output1 = output.view([self.batch_size, -1, self.output_dim])  # [batch_size, -1, output_dim]
+        #output1 = self.layer1(output)  # [-1, output_dim]
+        #output2 = self.layer2(output1)
 
-        output1 = output1.view([self.batch_size, -1, (self.input_dim+self.input_dim)])  # [batch_size, -1, output_dim]
+        #output1 = output1.view([self.batch_size, -1, (self.input_dim+16)])  # [batch_size, -1, output_dim]
 
-        return self.act(output2), self.act2(output1)
+        #return self.act(output2), self.act2(output1)
+        return self.act(output1), self.act(output1)
 
 
 class ConcatAggregator(Aggregator):

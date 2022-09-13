@@ -30,8 +30,8 @@ class polyHype(nn.Module):
         #print(self.hyperedges,"** hedges")
         self.hedgetypes = torch.LongTensor(params_neighbor[2]).cuda() if args.cuda else \
                 torch.LongTensor(params_neighbor[2])
-        self.nodeEmb = torch.LongTensor(params_neighbor[3]).cuda() if args.cuda else \
-                torch.LongTensor(params_neighbor[3])
+        self.nodeEmb = torch.FloatTensor(params_neighbor[3]).cuda() if args.cuda else \
+                torch.FloatTensor(params_neighbor[3])
         self.neighbor_samples = args.neighbor_samples
         self.neighbor_agg = MeanAggregator
         print(self.neighborhedges.shape)
@@ -117,7 +117,7 @@ class polyHype(nn.Module):
         edge_vectors2.append(vector2)
         res = edge_vectors[0].view([self.batch_size, self.n_types])
         #res2 = edge_vectors2[0].view([self.batch_size, (self.n_types+self.n_types)*(self.n_types+self.n_types)])
-        res2 = edge_vectors2[0].view([self.batch_size, (self.n_types+self.n_types)])
+        res2 = edge_vectors2[0].view([self.batch_size, (self.n_types)])
         return res,res2
 
     @staticmethod

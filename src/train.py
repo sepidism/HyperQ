@@ -108,17 +108,36 @@ def train(model_args, data):
         
 
         train_acc, _,train_true,train_pred = evaluate(train_hedge, train_labels)
-        print('Classification framework train acc: %.4f' % (train_acc))
+#        print('Classification framework train acc: %.4f' % (train_acc))
+        if args.knowledge == True:
+            valid_acc, _,valid_true,valid_pred = evaluate(valid_hedge, valid_labels)
+            test_acc, test_scores,test_true,test_pred = evaluate(test_hedge, test_labels)
+            current_res = 'acc: %.4f' % test_acc
+            print('train acc: %.4f   valid acc: %.4f   test acc: %.4f' % (train_acc, valid_acc, test_acc))
+            #print('train acc: %.4f   test acc: %.4f' % (train_acc, test_acc))
+            #print('train acc: %.4f' % (train_acc, valid_acc, test_acc))
+            mrr, mr, hit1, hit3, hit10 = calculate_ranking_metrics(test_hedge_l, test_scores, true_types)
+            current_res += '   mrr: %.4f   mr: %.4f   h1: %.4f   h3: %.4f   h10: %.4f' % (mrr, mr, hit1, hit3, hit10)
+            print('           mrr: %.4f   mr: %.4f   h1: %.4f   h3: %.4f   h10: %.4f' % (mrr, mr, hit1, hit3, hit10))
+            print()
+            if valid_acc > best_valid_acc:
+                best_valid_acc = valid_acc
+                final_res = current_res
+    if args.knowledge == True:
+        print('final results\n%s' % final_res)
     #embeddings = node_embedding(args,train_hedge,train_labels,nnodes,model)
     #partition = (args,test_hedge)
-    filename1 = '../data/' + args.dataset + '/' + 'tn.txt'
-    filename2 = '../data/' + args.dataset + '/' + 'nodeparts.txt'
-    X_train,label_x = find_embedding(args,filename1,trains,train_l,n_types,model)
+    if args.knowledge == False:
+        filename1 = '../data/' + args.dataset + '/' + 'tn.txt'
+        filename2 = '../data/' + args.dataset + '/' + 'nodeparts.txt'
+        X_train,label_x = find_embedding(args,filename1,trains,train_l,n_types,model)
     #X_train = find_embedding1(args,filename1,train_hedge,train_labels,model)
-    X_test,_ = find_embedding2(args,filename2,tests,test_hedge,test_l,n_types,model)
+        X_test,_ = find_embedding2(args,filename2,tests,test_hedge,test_l,n_types,model)
     #embeddings = torch.FloatTensor(embeddings).cuda()
     #X_train, X_test, label_x = calVar(embeddings, args, test_hedge)
-    preprocc(X_train,label_x,X_test,test_labels)
+        preprocc(X_train,label_x,X_test,test_labels)
+
+            #train_acc, _,train_true,train_pred = evaluate(train_hedge2, train_labels2)
 
 
 
@@ -190,7 +209,7 @@ def calculate_ranking_metrics(hyperedges_l, scores, true_types):
             scores[i, j] -= 1.0
 
     sorted_indices = np.argsort(-scores, axis=1)
-    relations = np.array(hyperedges_l)[0:scores.shape[0], 3]
+    relations = np.array(hyperedges_l)[0:scores.shape[0], 6]
     sorted_indices -= np.expand_dims(relations, 1)
     zero_coordinates = np.argwhere(sorted_indices == 0)
     rankings = zero_coordinates[:, 1] + 1
@@ -200,8 +219,9 @@ def calculate_ranking_metrics(hyperedges_l, scores, true_types):
     hit1 = float(np.mean(rankings <= 1))
     hit3 = float(np.mean(rankings <= 3))
     hit5 = float(np.mean(rankings <= 5))
+    hit10 = float(np.mean(rankings <= 10))
 
-    return mrr, mr, hit1, hit3, hit5
+    return mrr, mr, hit1, hit3, hit10
 
 def node_embedding(args,hyperedges,labels,nnodes,model):
 
