@@ -18,3 +18,5 @@ torch == 1.9
 numpy == 1.18
 scipy == 1.8
 sklearn == 0.21.3
+
+pip install -r requirements.txt
